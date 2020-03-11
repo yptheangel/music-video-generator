@@ -1,6 +1,0 @@
-file 'style-transfer\video\part1.avi'
-duration 2
-file 'style-transfer\video\part2.avi'
-duration 30
-file 'style-transfer\video\part3.avi'
-duration 2
