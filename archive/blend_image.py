@@ -11,7 +11,6 @@ styled=cv2.resize(styled,(ori.shape[1],ori.shape[0]))
 # if cv2.waitKey(0) == 27:
 #     cv2.destroyAllWindows()
 
-# alpha_slider_max = 100
 alpha_slider_max = 100
 
 window_title = "Blended image"
