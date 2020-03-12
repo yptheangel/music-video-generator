@@ -3,17 +3,18 @@ import cv2
 import argparse
 import os
 import os.path as osp
-
 from torchvision.transforms import transforms
+import glob
 
+# Cloned modules
 import utils
 import transformer
-import glob
 
 
 #   To use this script just simply enter
 #   python style.py --input video.mp4 --style hokusai-wave.pth
 #   E.g python style.py -i data\Cannonbal.mp4 -s weights\hokusai-wave.pth
+#   GPU Memory alert! if you have bigger memory, increase batch size , smaller memory, decrease batch size by using -b, default is batch size 8
 #   Remove old folders because this script still cannot overwrite the exisiting folder
 
 def stylize_folder(style_path, folder_containing_the_content_folder, save_folder, batch_size=1):
@@ -102,28 +103,65 @@ if __name__ == "__main__":
     VIDEO_HEIGHT = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
     FPS = int(cap.get(cv2.CAP_PROP_FPS))
 
-    # Prepare Part 1 by image blending
-    # Prepare Part 3 by image blending-reverse order
-
     getFrames(args.input)
     # Prepare Part 2 by inference the original frames into the network to generate styled frames
     stylize_folder(args.style, ORIGINAL_FRAMES_FOLDER_NAME, STYLED_FRAMES_FOLDER_NAME, batch_size=args.batchsize)
 
-    # Concatenate Part 1,2 and 3 altogether
-
-    # # This is hack-ish because I have not find a way to use glob to order the images in 1,2,3... instead of 1,10,11...
+    # This is hack-ish because I have not find a way to use glob to order the images in 1,2,3... instead of 1,10,11...
     numberOfImgs_Part2 = len(glob.glob(osp.join(STYLED_FRAMES_FOLDER_NAME, "frame*.jpg")))
     part2Frames = []
     for i in range(1, numberOfImgs_Part2 + 1):
         filename = osp.join(STYLED_FRAMES_FOLDER_NAME, "frame{}.jpg").format(i)
         part2Frames.append(filename)
 
+    # Uncomment this to only produce Part 2 without the Part 1 and Part 3
+    # fourcc = cv2.VideoWriter_fourcc(*'MP4V')
+    # out = cv2.VideoWriter(args.output, fourcc, FPS, (int(VIDEO_WIDTH), int(VIDEO_HEIGHT)))
+    #
+    # # Write frames from Part2 the video
+    # for image_name in part2Frames:
+    #     out.write(cv2.imread(image_name))
+    # out.release()
+    # print("Done creating the Part 2 of your styled video for your music!")
+
+    # Create Part1  that has a image blending effect transition
+    # Get the first frame from the "original_frames" folder and the the first frame from the "styled_frames" folder
+    first_ori = cv2.imread("original_frames/content/frame1.jpg")
+    first_styled = cv2.imread("styled_frames/frame1.jpg")
+    part1Frames = []
+    alpha = 0.0
+    for i in range(0, 100):
+        alpha = i / 100
+        beta = (1.0 - alpha)
+        output = cv2.addWeighted(first_styled, alpha, first_ori, beta, 0.0)
+        part1Frames.append(output)
+        # cv2.imwrite("part1_{}.jpg".format(i),output)
+
+    # Create Part3 that has an image blending effect transition but in an inverse order
+    # Get the last frame from the "original_frames" folder and the the last frame from the "styled_frames" folder
+    lastIndex = len(glob.glob(osp.join(ORIGINAL_FRAMES_FOLDER_NAME, "content/frame*.jpg")))
+    last_ori = cv2.imread("original_frames/content/frame" + str(lastIndex) + ".jpg")
+    last_styled = cv2.imread("styled_frames/frame" + str(lastIndex) + ".jpg")
+    part3Frames = []
+    alpha = 0.0
+    for i in range(0, 100):
+        alpha = i / 100
+        beta = (1.0 - alpha)
+        output = cv2.addWeighted(last_ori, alpha, last_styled, beta, 0.0)
+        part3Frames.append(output)
+        # cv2.imwrite("part3_{}.jpg".format(i), output)
+
+    # It is time to write our frames into a video!
+    #  Part1 and Part3 frames are stored in memory, there are of course better ways to do this, but oh well ...
     # Define the codec and create VideoWrite object
     fourcc = cv2.VideoWriter_fourcc(*'MP4V')
     out = cv2.VideoWriter(args.output, fourcc, FPS, (int(VIDEO_WIDTH), int(VIDEO_HEIGHT)))
 
-    # Write frames from Part2 the video
+    for i in (range(len(part1Frames))):
+        out.write(part1Frames[i])
     for image_name in part2Frames:
         out.write(cv2.imread(image_name))
+    for i in (range(len(part3Frames))):
+        out.write(part3Frames[i])
     out.release()
     print("Done creating your styled video for your music!")
