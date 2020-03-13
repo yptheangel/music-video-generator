@@ -1,7 +1,7 @@
 # Music Video Generator 
 Use Neural Style Transfer to generate music videos. 
 
-![Neural Style Transfer](https://github.com/yptheangel/music-video-generator/assets/intro.gif "Neural Style Transfer")
+![Neural Style Transfer](https://github.com/yptheangel/music-video-generator/blob/master/assets/intro.gif "Neural Style Transfer")
 
 
 ### App Features 
